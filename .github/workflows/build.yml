@@ -30,8 +30,6 @@ jobs:
           pip install -r requirements.txt pyinstaller
       - name: Test des conversions
         shell: bash
-        env:
-          QT_QPA_PLATFORM: offscreen
         run: |
           mkdir -p screenshots
           python tests/smoke.py 2>&1 | tee screenshots/rapport.txt

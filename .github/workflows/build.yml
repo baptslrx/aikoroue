@@ -1,0 +1,140 @@
+name: Compiler AikoRoue
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Test des conversions
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python tests/smoke.py
+      - name: Compilation (PyInstaller)
+        run: >
+          pyinstaller --noconfirm --windowed --name AikoRoue
+          --icon ../assets/icon.ico
+          --add-data "../assets/icon-256.png:assets"
+          --hidden-import pynput.mouse._win32 --hidden-import pynput.keyboard._win32
+          --collect-all imageio_ffmpeg --collect-all pypdfium2 --collect-all pypdfium2_raw
+          --collect-all pillow_heif --collect-data docx
+          run.py
+      - name: Installateur (Inno Setup)
+        shell: pwsh
+        working-directory: .
+        run: |
+          if (-not (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+          $env:AIKOROUE_VERSION = "1.0.0"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" packaging\aikoroue.iss
+          Compress-Archive -Path desktop\dist\AikoRoue -DestinationPath dist\AikoRoue-Windows-portable.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AikoRoue-Windows
+          path: |
+            dist/AikoRoue-Windows-Setup.exe
+            dist/AikoRoue-Windows-portable.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: captures-windows
+          path: desktop/screenshots
+
+  linux:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bibliothèques système
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libxkbcommon-x11-0 libfontconfig1 libdbus-1-3 \
+            libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxcb-xinerama0 fonts-dejavu-core
+      - name: Dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Test des conversions
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python tests/smoke.py
+      - name: Compilation (PyInstaller)
+        run: >
+          pyinstaller --noconfirm --windowed --name AikoRoue
+          --add-data "../assets/icon-256.png:assets"
+          --hidden-import pynput.mouse._xorg --hidden-import pynput.keyboard._xorg
+          --collect-submodules Xlib
+          --collect-all imageio_ffmpeg --collect-all pypdfium2 --collect-all pypdfium2_raw
+          --collect-all pillow_heif --collect-data docx
+          run.py
+      - name: Archive
+        working-directory: .
+        run: |
+          mkdir -p dist/pkg/AikoRoue-Linux
+          cp -r desktop/dist/AikoRoue dist/pkg/AikoRoue-Linux/
+          cp packaging/install-linux.sh dist/pkg/AikoRoue-Linux/installer.sh
+          tar -C dist/pkg -czf dist/AikoRoue-Linux-x86_64.tar.gz AikoRoue-Linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AikoRoue-Linux
+          path: dist/AikoRoue-Linux-x86_64.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: captures-linux
+          path: desktop/screenshots
+
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compilation universelle (Apple Silicon + Intel)
+        run: UNIVERSAL=1 ./macos/build.sh
+      - name: Archive
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent macos/build/AikoRoue.app dist/AikoRoue-Mac.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AikoRoue-Mac
+          path: dist/AikoRoue-Mac.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, linux, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          pattern: AikoRoue-*
+          merge-multiple: true
+      - name: Publier la version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" out/* --repo "${GITHUB_REPOSITORY}" \
+            --title "AikoRoue ${GITHUB_REF_NAME}" \
+            --notes "Téléchargements : Windows (installateur ou portable), Mac (universel), Linux (x86_64)."

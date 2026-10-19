@@ -4,6 +4,7 @@ Lancé par GitHub Actions (QT_QPA_PLATFORM=offscreen). Sort en erreur si une act
 """
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -95,6 +96,10 @@ def render_wheels(out_dir: Path, samples: dict[str, list[Path]]):
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
     app = QApplication(sys.argv)
     failures = []
     shots = ROOT / "screenshots"
@@ -118,7 +123,9 @@ def main() -> int:
                         print(f"  --   {a.title:12} ({msg})")
                     else:
                         print(f"  FAIL {a.title:12} {type(e).__name__}: {msg}")
-                        failures.append(f"{label}/{a.title}: {msg}")
+                        failures.append(f"{label}/{a.title}: {type(e).__name__}: {msg}")
+                        if os.environ.get("GITHUB_ACTIONS"):
+                            print(f"::error title={label} / {a.title}::{type(e).__name__}: {msg}".replace("\n", " "))
     print("\nCaptures :", ", ".join(sorted(p.name for p in shots.glob("*.png"))))
     if failures:
         print("\nÉCHECS :\n" + "\n".join(failures))
@@ -128,4 +135,13 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception as exc:  # noqa: BLE001
+        import traceback
+
+        tb = traceback.format_exc()
+        print(tb)
+        if os.environ.get("GITHUB_ACTIONS"):
+            print("::error title=Erreur fatale::" + " | ".join(tb.strip().splitlines()[-6:]))
+        sys.exit(1)

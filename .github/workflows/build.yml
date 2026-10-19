@@ -171,6 +171,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version || github.ref_name }}
         run: |
+          ls -la out
+          set +e
           gh release create "${VERSION}" out/* --repo "${GITHUB_REPOSITORY}" --target "${GITHUB_SHA}" \
             --title "AikoRoue ${VERSION}" \
-            --notes "Téléchargements : Windows (installateur ou portable), Mac (universel), Linux (x86_64)."
+            --notes "Téléchargements : Windows (installateur ou portable), Mac (universel), Linux (x86_64)." > log.txt 2>&1
+          code=$?
+          cat log.txt
+          if [ $code -ne 0 ]; then echo "::error title=gh release::$(tail -n 4 log.txt | tr '\n' ' ')"; exit 1; fi

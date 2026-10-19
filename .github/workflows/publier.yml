@@ -1,0 +1,45 @@
+name: Publier une version
+
+# Reprend les fichiers d'une compilation déjà réussie (onglet Actions) et crée la page de téléchargement.
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Numéro de la compilation « Compiler AikoRoue » à publier"
+        required: true
+      version:
+        description: "Numéro de version (ex. v1.0.0)"
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publier:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          pattern: AikoRoue-*
+          merge-multiple: true
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Créer la version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          ls -la out
+          set +e
+          gh release create "$VERSION" out/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "AikoRoue $VERSION" \
+            --notes "Téléchargements : Windows (installateur ou version portable), Mac (Apple Silicon + Intel), Linux (x86_64)." > log.txt 2>&1
+          code=$?
+          cat log.txt
+          if [ $code -ne 0 ]; then
+            echo "::error title=gh release::$(tail -n 4 log.txt | tr '\n' ' ')"
+            echo "::error title=fichiers::$(ls out | tr '\n' ' ')"
+            exit 1
+          fi

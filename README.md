@@ -11,7 +11,7 @@ Le thème s'adapte au système : roue **noire** en mode sombre, **blanche** en m
 ## Téléchargements
 
 Chaque envoi sur `main` compile automatiquement les trois versions (onglet **Actions**, « Compiler AikoRoue »).
-Pour publier une version téléchargeable, crée un tag `v1.0.0` : la page **Releases** reçoit alors les fichiers.
+Pour publier une version téléchargeable : **Actions → Compiler AikoRoue → Run workflow**, puis indique un numéro (ex. `v1.0.1`). La page **Releases** reçoit alors les fichiers.
 
 | Système | Fichier | Installation |
 |---|---|---|

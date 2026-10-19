@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+env:
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -25,9 +29,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
       - name: Test des conversions
+        shell: bash
         env:
           QT_QPA_PLATFORM: offscreen
-        run: python tests/smoke.py
+        run: |
+          mkdir -p screenshots
+          python tests/smoke.py 2>&1 | tee screenshots/rapport.txt
+      - name: Publier les captures et le rapport (branche captures-*)
+        if: always()
+        shell: bash
+        run: |
+          cd screenshots || exit 0
+          git init -q -b "captures-${RUNNER_OS}"
+          git -c user.name=ci -c user.email=ci@aikoroue add -A
+          git -c user.name=ci -c user.email=ci@aikoroue commit -q -m "Captures ${RUNNER_OS}" || exit 0
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "HEAD:captures-${RUNNER_OS}"
       - name: Compilation (PyInstaller)
         run: >
           pyinstaller --noconfirm --windowed --name AikoRoue
@@ -77,9 +93,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
       - name: Test des conversions
+        shell: bash
         env:
           QT_QPA_PLATFORM: offscreen
-        run: python tests/smoke.py
+        run: |
+          mkdir -p screenshots
+          python tests/smoke.py 2>&1 | tee screenshots/rapport.txt
+      - name: Publier les captures et le rapport (branche captures-*)
+        if: always()
+        shell: bash
+        run: |
+          cd screenshots || exit 0
+          git init -q -b "captures-${RUNNER_OS}"
+          git -c user.name=ci -c user.email=ci@aikoroue add -A
+          git -c user.name=ci -c user.email=ci@aikoroue commit -q -m "Captures ${RUNNER_OS}" || exit 0
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "HEAD:captures-${RUNNER_OS}"
       - name: Compilation (PyInstaller)
         run: >
           pyinstaller --noconfirm --windowed --name AikoRoue

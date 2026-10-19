@@ -139,6 +139,7 @@ jobs:
 
   macos:
     runs-on: macos-14
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Compilation universelle (Apple Silicon + Intel)
@@ -153,7 +154,10 @@ jobs:
           path: dist/AikoRoue-Mac.zip
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.version != '')
+    # Publie même si GitHub n'a pas de Mac disponible ce jour-là (Windows et Linux suffisent)
+    if: >-
+      always() && needs.windows.result == 'success' && needs.linux.result == 'success' &&
+      (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.version != ''))
     needs: [windows, linux, macos]
     runs-on: ubuntu-latest
     steps:

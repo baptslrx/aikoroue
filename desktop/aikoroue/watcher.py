@@ -1,7 +1,7 @@
-"""Détecte « glisser un fichier + Maj » n'importe où (Windows et Linux X11).
+"""Détecte « glisser un fichier + raccourci (Maj par défaut) » n'importe où (Windows et Linux X11).
 
 Aucune capture du clavier : seule la souris est écoutée (pynput), et l'état de la
-touche Maj est lu directement auprès du système au moment du glisser.
+touche choisie est lu directement auprès du système au moment du glisser.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ IS_WAYLAND = sys.platform.startswith("linux") and (
 EXPLORER_CLASSES = {"CabinetWClass", "ExploreWClass", "Progman", "WorkerW"}
 
 
-# ------------------------------------------------------------ état de Maj
+# ------------------------------------------------------------ état des touches
 
 if IS_WIN:
     import ctypes
@@ -31,8 +31,17 @@ if IS_WIN:
     _user32.GetAncestor.argtypes = [wintypes.HWND, wintypes.UINT]
     _user32.GetAncestor.restype = wintypes.HWND
 
-    def shift_down() -> bool:
-        return bool(_user32.GetAsyncKeyState(0x10) & 0x8000)  # VK_SHIFT
+    _VK = {"shift": (0x10,), "ctrl": (0x11,), "alt": (0x12,), "meta": (0x5B, 0x5C)}
+
+    def _down(vk: int) -> bool:
+        return bool(_user32.GetAsyncKeyState(vk) & 0x8000)
+
+    def trigger_down(trigger) -> bool:
+        if not trigger.mods and trigger.key is None:
+            return False
+        if not all(any(_down(vk) for vk in _VK[m]) for m in trigger.mods):
+            return False
+        return trigger.key is None or _down(int(trigger.key))
 
     def from_file_manager() -> bool:
         pt = wintypes.POINT()
@@ -47,21 +56,35 @@ if IS_WIN:
 
 else:
     _xdisplay = None
-    _shift_codes: list[int] = []
+    _mod_codes: dict[str, list[int]] = {}
+    _KEYSYMS = {"shift": ("Shift_L", "Shift_R"), "ctrl": ("Control_L", "Control_R"),
+                "alt": ("Alt_L", "Alt_R", "ISO_Level3_Shift"), "meta": ("Super_L", "Super_R")}
 
     def _init_x():
-        global _xdisplay, _shift_codes
+        global _xdisplay
         if _xdisplay is None:
             from Xlib import XK, display
 
             _xdisplay = display.Display()
-            _shift_codes = [_xdisplay.keysym_to_keycode(XK.string_to_keysym(n)) for n in ("Shift_L", "Shift_R")]
+            for mod, names in _KEYSYMS.items():
+                codes = [_xdisplay.keysym_to_keycode(XK.string_to_keysym(n)) for n in names]
+                _mod_codes[mod] = [c for c in codes if c]
 
-    def shift_down() -> bool:
+    def trigger_down(trigger) -> bool:
+        if not trigger.mods and trigger.key is None:
+            return False
         try:
             _init_x()
             keys = _xdisplay.query_keymap()
-            return any(code and keys[code // 8] & (1 << (code % 8)) for code in _shift_codes)
+
+            def down(code: int) -> bool:
+                return bool(code) and bool(keys[code // 8] & (1 << (code % 8)))
+
+            if not all(any(down(c) for c in _mod_codes.get(m, [])) for m in trigger.mods):
+                return False
+            if trigger.key is None:
+                return True
+            return down(_xdisplay.keysym_to_keycode(int(trigger.key)))
         except Exception:
             return False
 
@@ -70,13 +93,16 @@ else:
 
 
 class DragWatcher(QObject):
-    """Émet `shift_drag` quand on glisse avec Maj, `released` au relâchement."""
+    """Émet `shift_drag` quand on glisse avec le raccourci, `released` au relâchement."""
 
     shift_drag = Signal()
     released = Signal()
 
     def __init__(self):
         super().__init__()
+        from .shortcut import Trigger
+
+        self.trigger = Trigger()
         self.enabled = True
         self.everywhere = False  # Windows : accepter aussi les glisser hors de l'Explorateur
         self._down = False
@@ -128,6 +154,6 @@ class DragWatcher(QObject):
             return
         if abs(x - self._start[0]) + abs(y - self._start[1]) < 12:
             return
-        if shift_down():
+        if trigger_down(self.trigger):
             self._fired = True
             self.shift_drag.emit()

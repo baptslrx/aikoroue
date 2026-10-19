@@ -95,6 +95,30 @@ def render_wheels(out_dir: Path, samples: dict[str, list[Path]]):
         t.hide()
 
 
+def check_shortcut(out_dir: Path) -> list[str]:
+    """Le raccourci se règle, s'enregistre et se relit correctement."""
+    from PySide6.QtTest import QTest
+
+    from aikoroue.shortcut import ShortcutDialog, Trigger
+
+    errors = []
+    t = Trigger(["ctrl", "alt"], 0x41, "A")
+    back = Trigger.loads(t.dumps())
+    if (back.mods, back.key, back.key_label) != (t.mods, t.key, t.key_label):
+        errors.append(f"raccourci : relecture incorrecte {back}")
+    if Trigger.loads("n'importe quoi").label() != "Maj":
+        errors.append("raccourci : valeur par défaut incorrecte")
+    dlg = ShortcutDialog(Trigger())
+    dlg.show()
+    QTest.keyPress(dlg, Qt.Key.Key_A, Qt.KeyboardModifier.ControlModifier)
+    print("  raccourci enregistré par la fenêtre :", dlg.pending.label())
+    if dlg.pending.label() != "Ctrl + A":
+        errors.append(f"raccourci : la fenêtre a enregistré « {dlg.pending.label()} » au lieu de « Ctrl + A »")
+    dlg.grab().save(str(out_dir / "fenetre-raccourci.png"))
+    dlg.close()
+    return errors
+
+
 def main() -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -107,6 +131,8 @@ def main() -> int:
         d = Path(tmp)
         samples = make_samples(d)
         render_wheels(shots, samples)
+        print("\n== raccourci")
+        failures += check_shortcut(shots)
         for label, paths in samples.items():
             acts = catalog.actions_for(paths)
             print(f"\n== {label} ({', '.join(p.name for p in paths)}) : {[a.title for a in acts]}")

@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
 from . import __version__
 from .converters import Oops
+from .shortcut import ShortcutDialog, Trigger
 from .watcher import IS_WAYLAND, IS_WIN, DragWatcher
 from .wheel import Toast, WheelWindow, tray_icon
 
@@ -96,12 +97,12 @@ class AikoRoue(QObject):
         self.watcher = DragWatcher()
         self.watcher.enabled = self.settings.value("enabled", True, type=bool)
         self.watcher.everywhere = self.settings.value("everywhere", False, type=bool)
+        self.watcher.trigger = Trigger.loads(self.settings.value("trigger", "", type=str))
         self.watcher.shift_drag.connect(self.wheel.present_at_cursor)
         self.watcher.released.connect(lambda: self.wheel.dismiss(450))
         self.hook_ok = self.watcher.start()
 
         self.tray = QSystemTrayIcon(tray_icon(), self)
-        self.tray.setToolTip("AikoRoue — Maj + glisser un fichier")
         self.tray.activated.connect(self._tray_clicked)
         self._build_menu()
         if QSystemTrayIcon.isSystemTrayAvailable():
@@ -124,8 +125,12 @@ class AikoRoue(QObject):
         m = QMenu()
         head = m.addAction(f"AikoRoue {__version__}")
         head.setEnabled(False)
-        hint = m.addAction("Maj + glisser un fichier" if self.hook_ok else "Clique ici, puis glisse un fichier")
+        label = self.watcher.trigger.label()
+        hint = m.addAction(f"{label} + glisser un fichier" if self.hook_ok else "Clique ici, puis glisse un fichier")
         hint.setEnabled(False)
+        self.tray.setToolTip(f"AikoRoue — {label} + glisser un fichier")
+        if self.hook_ok:
+            m.addAction("Changer le raccourci…", self._change_shortcut)
         m.addSeparator()
         m.addAction("Ouvrir la roue", self.wheel.present_pinned)
         m.addSeparator()
@@ -148,6 +153,13 @@ class AikoRoue(QObject):
         m.addAction("Quitter AikoRoue", self.app.quit)
         self.menu = m
         self.tray.setContextMenu(m)
+
+    def _change_shortcut(self):
+        dlg = ShortcutDialog(self.watcher.trigger)
+        if dlg.exec():
+            self.watcher.trigger = dlg.pending
+            self.settings.setValue("trigger", dlg.pending.dumps())
+            self._build_menu()
 
     def _set_enabled(self, on: bool):
         self.watcher.enabled = on
@@ -190,6 +202,7 @@ class AikoRoue(QObject):
             f"{how}\n\n• Anneau intérieur : convertir dans un autre format\n"
             "• Anneau extérieur : outils (compresser, pivoter, fusionner…)\n"
             "• Lâcher au centre : annuler\n\n"
+            "Tu peux remplacer Maj par la touche de ton choix : clic droit sur l'icône → « Changer le raccourci… ».\n\n"
             "Le résultat est créé à côté du fichier d'origine. AikoRoue reste dans la zone de notification.")
         box.exec()
 

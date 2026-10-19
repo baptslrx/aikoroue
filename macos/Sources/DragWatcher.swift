@@ -1,7 +1,7 @@
 import AppKit
 
 /// Détecte, sans aucune permission spéciale, qu'un fichier est en train d'être glissé
-/// (n'importe où dans macOS) pendant que la touche Maj est enfoncée.
+/// (n'importe où dans macOS) pendant que la touche choisie (Maj par défaut) est enfoncée.
 ///
 /// Principe : quand un glisser-déposer commence, le système écrit les fichiers dans le
 /// presse-papiers de glisser (`NSPasteboard(name: .drag)`), ce qui incrémente son
@@ -11,6 +11,7 @@ final class DragWatcher: NSObject {
     var onShiftDrag: (([URL], NSPoint) -> Void)?
     var onMouseUp: (() -> Void)?
     var isEnabled = true
+    var trigger = Trigger.shift
 
     private var timer: Timer?
     private var wasDown = false
@@ -41,7 +42,7 @@ final class DragWatcher: NSObject {
         lastCount = count
 
         guard isEnabled, down, !firedForThisDrag, count != baseline,
-              NSEvent.modifierFlags.contains(.shift) else { return }
+              trigger.isPressed() else { return }
 
         let urls = (pasteboard.readObjects(forClasses: [NSURL.self],
                                            options: [.urlReadingFileURLsOnly: true]) as? [URL]) ?? []

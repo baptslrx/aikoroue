@@ -8,6 +8,8 @@ Le thème s'adapte au système : roue **noire** en mode sombre, **blanche** en m
 - **Anneau extérieur** : les outils
 - **Centre** : annuler
 
+**Changer le raccourci** : Maj est la touche par défaut, mais tu peux choisir la tienne (⌥ Option, Ctrl, une lettre, une combinaison…). Clic sur l'icône AikoRoue (clic droit sous Windows) → **Changer le raccourci…**, puis appuie sur la touche voulue.
+
 ## Téléchargements
 
 Chaque envoi sur `main` compile automatiquement les trois versions (onglet **Actions**, « Compiler AikoRoue »).

@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var watcher: DragWatcher!
     private var wheel: RadialPanel!
     private var toast: Toast!
+    private var recorder: ShortcutRecorder!
     private let defaults = UserDefaults.standard
 
     private var enabled: Bool {
@@ -39,8 +40,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.perform(action, on: urls)
         }
 
+        recorder = ShortcutRecorder()
+        recorder.onSave = { [weak self] trigger in
+            trigger.save()
+            self?.watcher.trigger = trigger
+            self?.rebuildMenu()
+        }
+
         watcher = DragWatcher()
         watcher.isEnabled = enabled
+        watcher.trigger = Trigger.load()
         watcher.onShiftDrag = { [weak self] urls, point in
             self?.openWheel(for: urls, at: point)
         }
@@ -51,7 +60,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = statusBarIcon()
-        statusItem.button?.toolTip = "AikoRoue — Maj + glisser un fichier"
         rebuildMenu()
 
         if !defaults.bool(forKey: "welcomed") {
@@ -103,9 +111,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let head = NSMenuItem(title: "AikoRoue", action: nil, keyEquivalent: "")
         head.isEnabled = false
         menu.addItem(head)
-        let hint = NSMenuItem(title: "⇧ Maj + glisser un fichier", action: nil, keyEquivalent: "")
+        let hint = NSMenuItem(title: "\(watcher.trigger.label) + glisser un fichier", action: nil, keyEquivalent: "")
         hint.isEnabled = false
         menu.addItem(hint)
+        menu.addItem(item("Changer le raccourci…", #selector(changeShortcut)))
+        statusItem.button?.toolTip = "AikoRoue — \(watcher.trigger.label) + glisser un fichier"
 
         menu.addItem(.separator())
         menu.addItem(item("Activé", #selector(toggleEnabled), on: enabled))
@@ -122,6 +132,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         i.target = self
         if let on { i.state = on ? .on : .off }
         return i
+    }
+
+    @objc private func changeShortcut() {
+        recorder.open(current: watcher.trigger)
     }
 
     @objc private func toggleEnabled() {
@@ -165,6 +179,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         • Anneau intérieur : convertir dans un autre format
         • Anneau extérieur : outils (compresser, détourer, pivoter, fusionner…)
         • Lâcher au centre : annuler
+
+        Tu peux changer la touche Maj pour celle de ton choix dans le menu de l'icône → « Changer le raccourci… ».
 
         Le résultat est créé à côté du fichier d'origine. AikoRoue vit dans la barre des menus (icône en forme de roue).
         """

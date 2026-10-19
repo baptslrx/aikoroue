@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import (QColor, QCursor, QFont, QGuiApplication, QIcon, QPainter, QPainterPath,
+from PySide6.QtGui import (QColor, QCursor, QFont, QGuiApplication, QIcon, QPainter, QPainterPath, QRegion,
                            QPalette, QPen, QPixmap)
 from PySide6.QtWidgets import QWidget
 
@@ -150,9 +150,15 @@ class WheelWindow(QWidget):
         x = min(max(center.x() - self.SIDE // 2, geo.left()), geo.right() - self.SIDE)
         y = min(max(center.y() - self.SIDE // 2, geo.top()), geo.bottom() - self.SIDE)
         self.move(x, y)
+        self._apply_mask()
         self.show()
         self.raise_()
         self.update()
+
+    def _apply_mask(self):
+        r = int((self.outer_radius() if self.rings else self.RINGS[1][1]) + 18)
+        c = self.SIDE // 2
+        self.setMask(QRegion(c - r, c - r, 2 * r, 2 * r, QRegion.RegionType.Ellipse))
 
     def _idle_timeout(self):
         if not self.got_drag and not self.pinned:
@@ -330,6 +336,7 @@ class WheelWindow(QWidget):
         self._idle.stop()
         self._hide_timer.stop()
         self._configure(paths)
+        self._apply_mask()
         self._track(e)
 
     def dragMoveEvent(self, e):
@@ -344,18 +351,21 @@ class WheelWindow(QWidget):
         self.in_center = self._is_center(pos)
         self.hovered = None if self.in_center else self._hit(pos)
         self.update()
-        if self.hovered:
-            e.setDropAction(Qt.DropAction.CopyAction)  # jamais « déplacer » : l'original reste intact
-            e.accept()
-        else:
-            e.ignore()
+        # On accepte partout sur la roue (sinon Windows affiche le curseur « interdit »).
+        # Toujours « copier », jamais « déplacer » : l'original reste intact.
+        e.setDropAction(Qt.DropAction.CopyAction)
+        e.accept()
 
     def dropEvent(self, e):
         pos = e.position()
         slot = None if self._is_center(pos) else self._hit(pos)
         paths = _paths_from(e.mimeData())
-        if not slot or not paths:
+        if not slot or not paths:  # lâché au centre (ou hors quartier) : on annule sans rien faire
+            e.setDropAction(Qt.DropAction.IgnoreAction)
             e.ignore()
+            self.hovered, self.in_center = None, False
+            if not self.pinned:
+                self.hide()
             return
         k, i = slot
         action = self.rings[k][i]

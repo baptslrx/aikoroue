@@ -1,0 +1,100 @@
+This plugin does not support raise()
+This plugin does not support raise()
+This plugin does not support raise()
+This plugin does not support raise()
+This plugin does not support propagateSizeHints()
+
+== raccourci
+  raccourci enregistré par la fenêtre : Ctrl + A
+
+== photo (photo.jpg) : ['PNG', 'WEBP', 'HEIC', 'GIF', 'ICO', 'PDF', 'Compresser', 'Réduire', 'Pivoter', 'Métadonnées', 'ZIP']
+  ok   PNG          → photo.png
+  ok   WEBP         → photo.webp
+  ok   HEIC         → photo.heic
+  ok   GIF          → photo.gif
+  ok   ICO          → photo.ico
+  ok   PDF          → photo.pdf
+  ok   Compresser   → photo (compressé).jpg
+  ok   Réduire      → photo (réduit).jpg
+  ok   Pivoter      → photo (pivoté).jpg
+  ok   Métadonnées  → photo (sans métadonnées).jpg
+  ok   ZIP          → photo.zip
+
+== logo (logo.png) : ['JPG', 'WEBP', 'HEIC', 'GIF', 'ICO', 'PDF', 'Compresser', 'Réduire', 'Pivoter', 'Métadonnées', 'ZIP']
+  ok   JPG          → logo.jpg
+  ok   WEBP         → logo.webp
+  ok   HEIC         → logo.heic
+  ok   GIF          → logo.gif
+  ok   ICO          → logo.ico
+  ok   PDF          → logo.pdf
+  ok   Compresser   → logo (compressé).png
+  ok   Réduire      → logo (réduit).png
+  ok   Pivoter      → logo (pivoté).png
+  ok   Métadonnées  → logo (sans métadonnées).png
+  ok   ZIP          → logo.zip
+
+== pdf (rapport.pdf) : ['JPG', 'PNG', 'DOCX', 'TXT', 'Compresser', 'Séparer', 'Pivoter', 'Métadonnées', 'ZIP']
+  ok   JPG          → rapport (JPG)
+  ok   PNG          → rapport (PNG)
+  ok   DOCX         → rapport.docx
+  ok   TXT          → rapport.txt
+  ok   Compresser   → rapport (compressé).pdf
+  ok   Séparer      → rapport (pages)
+  ok   Pivoter      → rapport (pivoté).pdf
+  ok   Métadonnées  → rapport (sans métadonnées).pdf
+  ok   ZIP          → rapport.zip
+
+== 2 pdf (rapport.pdf, annexe.pdf) : ['JPG', 'PNG', 'DOCX', 'TXT', 'Compresser', 'Fusionner', 'Séparer', 'Pivoter', 'Métadonnées', 'ZIP']
+  ok   JPG          → rapport (JPG) 2, annexe (JPG)
+  ok   PNG          → rapport (PNG) 2, annexe (PNG)
+  ok   DOCX         → rapport 2.docx, annexe.docx
+  ok   TXT          → rapport 2.txt, annexe.txt
+  ok   Compresser   → rapport (compressé) 2.pdf, annexe (compressé).pdf
+  ok   Fusionner    → Fusion.pdf
+  ok   Séparer      → rapport (pages) 2, annexe (pages)
+  ok   Pivoter      → rapport (pivoté) 2.pdf, annexe (pivoté).pdf
+  ok   Métadonnées  → rapport (sans métadonnées) 2.pdf, annexe (sans métadonnées).pdf
+  ok   ZIP          → Archive.zip
+
+== vidéo (clip.mp4) : ['MOV', 'WEBM', 'GIF', 'MP3', 'Compresser', 'Sans son', 'Image', 'ZIP']
+  ok   MOV          → clip.mov
+  ok   WEBM         → clip.webm
+  ok   GIF          → clip.gif
+  ok   MP3          → clip.mp3
+  --   Compresser   (Vidéo déjà optimisée)
+  ok   Sans son     → clip (sans son).mp4
+  ok   Image        → clip (image).jpg
+  ok   ZIP          → clip.zip
+
+== audio (son.wav) : ['MP3', 'M4A', 'FLAC', 'OGG', 'Compresser', 'ZIP']
+  ok   MP3          → son.mp3
+  ok   M4A          → son.m4a
+  ok   FLAC         → son.flac
+  ok   OGG          → son.ogg
+  ok   Compresser   → son (compressé).mp3
+  ok   ZIP          → son.zip
+
+== texte (notes.txt) : ['PDF', 'DOCX', 'MD', 'HTML', 'ZIP']
+  ok   PDF          → notes.pdf
+  ok   DOCX         → notes.docx
+  ok   MD           → notes 2.md
+  ok   HTML         → notes.html
+  ok   ZIP          → notes.zip
+
+== markdown (notes.md) : ['PDF', 'DOCX', 'TXT', 'HTML', 'ZIP']
+  ok   PDF          → notes 2.pdf
+  ok   DOCX         → notes 2.docx
+  ok   TXT          → notes 2.txt
+  ok   HTML         → notes 2.html
+  ok   ZIP          → notes 2.zip
+
+== docx (lettre.docx) : ['PDF', 'TXT', 'MD', 'HTML', 'ZIP']
+  ok   PDF          → lettre.pdf
+  ok   TXT          → lettre.txt
+  ok   MD           → lettre.md
+  ok   HTML         → lettre.html
+  ok   ZIP          → lettre.zip
+
+Captures : bulle-clair.png, bulle-sombre.png, fenetre-raccourci.png, roue-image-clair.png, roue-image-sombre.png, roue-pdf-clair.png, roue-pdf-sombre.png, roue-video-clair.png, roue-video-sombre.png
+
+Tout est OK
